@@ -1,78 +1,84 @@
-// pages/create.tsx or app/create/page.tsx
+// pages/create.tsx  (or app/create/page.tsx)
 "use client";
+
 import "katex/dist/katex.min.css";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ColumnDefinition, TableEditor } from "./CreateTableProblem";
+import { ColumnDefinition, TableData, TableEditor } from "./TableEditor";
 import { MCQEditor, MCQOption } from "./MQCEditor";
 import { parseMixedText } from "../_utils/parseMixedText";
+import { FillBlankEditor } from "./BlankEditor";
 
 // ProblemType union
 type ProblemType = "TABLE_FILL_CELLS" | "MCQ_SINGLE" | "FILL_IN_THE_BLANK";
 
-export default function CreateQuestion() {
+export default function Dashboard({
+  setView,
+}: {
+  setView: (view: string) => void;
+}) {
   const router = useRouter();
 
-  // 1) Load MathLive & configure fontsDirectory
-  useEffect(() => {
-    import("mathlive").then((ml) => {
-      (ml as any).default.configure({
-        fontsDirectory: "/fonts/mathlive",
-      });
-    });
-  }, []);
-
-  // ─── Common State ─────────────────────────────────────────────────────────────
-  // question can contain plain text plus $…$ sections
+  //
+  // ─── 1) Common State ─────────────────────────────────────────────────────────
+  //
+  // question can mix plain + LaTeX
   const [question, setQuestion] = useState<string>(
     "Example: Solve for x: $x^2 + 3x + 2 = 0$"
   );
   const [type, setType] = useState<ProblemType>("TABLE_FILL_CELLS");
 
-  // ─── TABLE_FILL_CELLS State ───────────────────────────────────────────────────
-  const [columns, setColumns] = useState<ColumnDefinition[]>([
+  //
+  // ─── 2) Table‐Editor State MIRROR ───────────────────────────────────────────
+  //
+  // We hold a single object tableData that Dashboard updates whenever TableEditor calls onChange.
+  // Initialize it with exactly the same defaults that the old code used before.
+  //
+  const initialColumns: ColumnDefinition[] = [
     { name: "Column 1", type: "text" },
     { name: "Column 2", type: "text" },
-  ]);
-  const [rows, setRows] = useState<string[]>(["Row 1", "Row 2"]);
-  const [cells, setCells] = useState<string[][]>(
-    rows.map(() => columns.map(() => ""))
+  ];
+  const initialRows: string[] = ["Row 1", "Row 2"];
+  const initialCells: string[][] = initialRows.map(() =>
+    initialColumns.map(() => "")
   );
-  const [rowHeaderLabel, setRowHeaderLabel] = useState<string>("Row");
+  const initialRowHeaderLabel = "Row";
 
-  // ─── MCQ State ───────────────────────────────────────────────────────────────
+  const [tableData, setTableData] = useState<TableData>({
+    columns: initialColumns,
+    rows: initialRows,
+    cells: initialCells,
+    rowHeaderLabel: initialRowHeaderLabel,
+  });
+
+  //
+  // ─── 3) MCQ State ───────────────────────────────────────────────────────────
+  //
   const [mcqOptions, setMcqOptions] = useState<MCQOption[]>([
     { text: "", type: "text" },
   ]);
   const [correctOptionIndex, setCorrectOptionIndex] = useState<number>(0);
 
-  // ─── Fill-in-the-Blank State ─────────────────────────────────────────────────
+  //
+  // ─── 4) Fill‐in‐the‐Blank State ─────────────────────────────────────────────
+  //
   const [blankAnswer, setBlankAnswer] = useState<string>("");
 
-  // ─── Synchronize cells when columns/rows change ─────────────────────────────
-  useEffect(() => {
-    const newCells = rows.map((_, rIdx) =>
-      columns.map((_, cIdx) => cells[rIdx]?.[cIdx] ?? "")
-    );
-    setCells(newCells);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, rows]);
-
-  // ─── MathLive Inline Editor State ────────────────────────────────────────────
+  //
+  // ─── 5) MathLive Inline Editor State ───────────────────────────────────────
+  //
+  // Controls “+ Insert Math” into the question textarea.
   const [showMathEditor, setShowMathEditor] = useState<boolean>(false);
-  const [mathInput, setMathInput] = useState<string>(""); // the raw LaTeX inside math-field
+  const [mathInput, setMathInput] = useState<string>(""); // raw LaTeX
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Helper: Insert `$mathInput$` into the textarea at cursor position
   const insertMathAtCursor = () => {
     const ta = textareaRef.current;
     if (!ta) return;
-
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-
     const before = question.slice(0, start);
     const after = question.slice(end);
     const combined = `${before}$${mathInput}$${after}`;
@@ -81,25 +87,29 @@ export default function CreateQuestion() {
     setMathInput("");
     setShowMathEditor(false);
 
-    // After updating state, restore focus & move cursor to right after the inserted math
     setTimeout(() => {
       if (!ta) return;
       ta.focus();
-      const newPos = before.length + mathInput.length + 2; // +2 for the two '$'
+      // Move cursor to right after inserted math
+      const newPos = before.length + mathInput.length + 2; // +2 for the two “$”
       ta.setSelectionRange(newPos, newPos);
     }, 0);
   };
 
-  // ─── Handle Submit: Build payload & save to sessionStorage ─────────────────
+  //
+  // ─── 6) Handle Submit: Build payload & save to sessionStorage ──────────────
+  //
   const handleSubmit = () => {
     const id = Date.now().toString();
     const payload: any = { id, type, question };
 
     if (type === "TABLE_FILL_CELLS") {
-      payload.columns = columns;
-      payload.rows = rows;
-      payload.cells = cells;
-      payload.rowHeaderLabel = rowHeaderLabel;
+      // Instead of reading columns/rows/cells from local Dashboard state,
+      // we now read from tableData, which is kept in sync by TableEditor.
+      payload.columns = tableData.columns;
+      payload.rows = tableData.rows;
+      payload.cells = tableData.cells;
+      payload.rowHeaderLabel = tableData.rowHeaderLabel;
     } else if (type === "MCQ_SINGLE") {
       payload.options = mcqOptions;
       payload.correctOptionIndex = correctOptionIndex;
@@ -118,9 +128,12 @@ export default function CreateQuestion() {
   return (
     <div className="min-h-screen bg-white text-gray-900 p-10 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">📝 Create a New Question</h1>
-      <Link href="/" className="text-blue-600 underline mb-6 block">
+      <div
+        onClick={() => setView("list")}
+        className="text-blue-600 underline mb-6 block cursor-pointer"
+      >
         ← Back to Question List
-      </Link>
+      </div>
 
       {/* ─── Problem Type Selector ──────────────────────────────────────────────── */}
       <div className="mb-6">
@@ -209,14 +222,11 @@ export default function CreateQuestion() {
       {type === "TABLE_FILL_CELLS" && (
         <div className="mb-6">
           <TableEditor
-            columns={columns}
-            setColumns={setColumns}
-            rows={rows}
-            setRows={setRows}
-            cells={cells}
-            setCells={setCells}
-            rowHeaderLabel={rowHeaderLabel}
-            setRowHeaderLabel={setRowHeaderLabel}
+            initialColumns={tableData.columns}
+            initialRows={tableData.rows}
+            initialCells={tableData.cells}
+            initialRowHeaderLabel={tableData.rowHeaderLabel}
+            onChange={(data) => setTableData(data)}
           />
         </div>
       )}
@@ -233,16 +243,12 @@ export default function CreateQuestion() {
         </div>
       )}
 
-      {/* ─── Fill-in-the-Blank Editor (if selected) ───────────────────────────── */}
+      {/* ─── Fill‐in‐the‐Blank Editor (if selected) ───────────────────────────── */}
       {type === "FILL_IN_THE_BLANK" && (
         <div className="mb-6">
-          <label className="block font-semibold mb-2">Blank Answer</label>
-          <input
-            type="text"
-            value={blankAnswer}
-            onChange={(e) => setBlankAnswer(e.target.value)}
-            className="w-full border p-2 rounded"
-            placeholder="Enter the correct answer"
+          <FillBlankEditor
+            initialAnswer={blankAnswer}
+            onChange={(newAns) => setBlankAnswer(newAns)}
           />
         </div>
       )}

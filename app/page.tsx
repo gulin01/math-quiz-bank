@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import QuestionList from "./_components/QuestionList";
-import CreateQuestion from "./_components/CreateQuestion";
+import Dashboard from "./_components/Dashboard";
+import QuestionPreview from "./_components/QuestionPreview";
 
 export default function Home() {
   const [view, setView] = useState<string>("list");
@@ -27,11 +28,18 @@ export default function Home() {
           >
             📄 View Question List
           </button>
+          <button
+            onClick={() => setView("preview")}
+            className="bg-gray-700 text-white px-6 py-3 rounded text-lg hover:bg-gray-800 transition"
+          >
+            📄 Test Questions As a User
+          </button>
         </div>
 
         <div className="w-full flex justify-center pt-10">
-          {view === "create" && <CreateQuestion />}
-          {view === "list" && <QuestionList />}
+          {view === "create" && <Dashboard setView={setView} />}
+          {view === "list" && <QuestionList setView={setView} />}
+          {view === "preview" && <QuestionPreview setView={setView} />}
         </div>
       </div>
     </div>

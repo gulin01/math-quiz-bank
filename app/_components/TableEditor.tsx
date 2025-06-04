@@ -1,94 +1,149 @@
-import { useEffect } from "react";
+// components/TableEditor.tsx
+"use client";
 
+import { useEffect, useState } from "react";
+
+// Re-export this type so Dashboard and other consumers can import it.
 export type ColumnDefinition = {
   name: string;
   type: "text" | "number" | "latex";
 };
 
-export type TableEditorProps = {
+/**
+ * A single object representing the entire “table” state.
+ * Dashboard will store one of these in its own state whenever TableEditor changes.
+ */
+export type TableData = {
   columns: ColumnDefinition[];
-  setColumns: (cols: ColumnDefinition[]) => void;
   rows: string[];
-  setRows: (r: string[]) => void;
   cells: string[][];
-  setCells: (c: string[][]) => void;
   rowHeaderLabel: string;
-  setRowHeaderLabel: (label: string) => void;
 };
 
+interface TableEditorProps {
+  /**
+   * The initial shape of the table (from Dashboard). Once mounted, TableEditor
+   * will copy these into internal state and from then on manage them locally.
+   */
+  initialColumns: ColumnDefinition[];
+  initialRows: string[];
+  initialCells: string[][];
+  initialRowHeaderLabel: string;
+
+  /**
+   * Called whenever any of [columns, rows, cells, rowHeaderLabel] changes.
+   * Dashboard will use this to keep its own `tableData` up to date.
+   */
+  onChange: (data: TableData) => void;
+}
+
 export function TableEditor({
-  columns,
-  setColumns,
-  rows,
-  setRows,
-  cells,
-  setCells,
-  rowHeaderLabel,
-  setRowHeaderLabel,
+  initialColumns,
+  initialRows,
+  initialCells,
+  initialRowHeaderLabel,
+  onChange,
 }: TableEditorProps) {
-  // Load MathLive custom element once
+  //
+  // ─── Local State (all four pieces) ─────────────────────────────────────────
+  //
+  const [columns, setColumns] = useState<ColumnDefinition[]>(initialColumns);
+  const [rows, setRows] = useState<string[]>(initialRows);
+  const [cells, setCells] = useState<string[][]>(initialCells);
+  const [rowHeaderLabel, setRowHeaderLabel] = useState<string>(
+    initialRowHeaderLabel
+  );
+
+  //
+  // ─── 1) Load MathLive custom element once ─────────────────────────────────
+  //
   useEffect(() => {
     import("mathlive");
   }, []);
 
-  // Keep cells matrix in sync whenever columns or rows change
+  //
+  // ─── 2) Whenever columns or rows change, re‐compute cells matrix size ────
+  //
+  // (We preserve any existing cell content if it already existed.)
+  //
   useEffect(() => {
     const newCells = rows.map((_, rIdx) =>
-      columns.map((_, cIdx) => cells[rIdx]?.[cIdx] ?? "")
+      columns.map((_, cIdx) => {
+        // If there was a previous value in cells[rIdx][cIdx], keep it. Otherwise use "".
+        return cells[rIdx]?.[cIdx] ?? "";
+      })
     );
     setCells(newCells);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columns, rows]);
 
+  //
+  // ─── 3) Whenever ANY of [columns, rows, cells, rowHeaderLabel] changes,
+  //     tell the parent exactly what our current table “shape” is.
+  //
+  useEffect(() => {
+    onChange({
+      columns,
+      rows,
+      cells,
+      rowHeaderLabel,
+    });
+  }, [columns, rows, cells, rowHeaderLabel]);
+
+  //
+  // ─── 4) Local helpers to mutate columns/rows/etc ──────────────────────────
+  //
   const addColumn = () => {
+    // Append a new “Number” column by default
     setColumns([
       ...columns,
       { name: `Column ${columns.length + 1}`, type: "number" },
     ]);
-    setCells(cells.map((r) => [...r, ""]));
+    // Also add an empty cell string to every row
+    setCells((prev) => prev.map((r) => [...r, ""]));
   };
 
   const deleteColumn = (cIdx: number) => {
-    setColumns(columns.filter((_, i) => i !== cIdx));
-    setCells(cells.map((r) => r.filter((_, i) => i !== cIdx)));
+    setColumns((prev) => prev.filter((_, i) => i !== cIdx));
+    setCells((prev) => prev.map((r) => r.filter((_, i) => i !== cIdx)));
   };
 
   const addRow = () => {
-    setRows([...rows, `Row ${rows.length + 1}`]);
-    setCells([...cells, Array(columns.length).fill("")]);
+    setRows((prev) => [...prev, `Row ${prev.length + 1}`]);
+    setCells((prev) => [...prev, Array(columns.length).fill("")]);
   };
 
   const deleteRow = (rIdx: number) => {
-    setRows(rows.filter((_, i) => i !== rIdx));
-    setCells(cells.filter((_, i) => i !== rIdx));
+    setRows((prev) => prev.filter((_, i) => i !== rIdx));
+    setCells((prev) => prev.filter((_, i) => i !== rIdx));
   };
 
   const updateColName = (idx: number, val: string) => {
-    const newCols = columns.map((c, i) =>
-      i === idx ? { ...c, name: val } : c
+    setColumns((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, name: val } : c))
     );
-    setColumns(newCols);
   };
 
   const updateColType = (idx: number, val: ColumnDefinition["type"]) => {
-    const newCols = columns.map((c, i) =>
-      i === idx ? { ...c, type: val } : c
+    setColumns((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, type: val } : c))
     );
-    setColumns(newCols);
   };
 
   const updateRowName = (idx: number, val: string) => {
-    const newRows = rows.map((r, i) => (i === idx ? val : r));
-    setRows(newRows);
+    setRows((prev) => prev.map((r, i) => (i === idx ? val : r)));
   };
 
   const updateCell = (rIdx: number, cIdx: number, val: string) => {
-    const newCells = cells.map((r, i) =>
-      i === rIdx ? r.map((cell, j) => (j === cIdx ? val : cell)) : r
+    setCells((prev) =>
+      prev.map((r, i) =>
+        i === rIdx ? r.map((cell, j) => (j === cIdx ? val : cell)) : [...r]
+      )
     );
-    setCells(newCells);
   };
 
+  //
+  // ─── 5) Render the table editor UI ────────────────────────────────────────
+  //
   return (
     <div className="mb-8">
       <div className="flex gap-2 mb-4">
@@ -144,7 +199,7 @@ export function TableEditor({
                     className="w-full p-1 border rounded text-center text-sm"
                   >
                     <option value="number">Number</option>
-                    <option value="string">Text</option>
+                    <option value="text">Text</option>
                     <option value="latex">Math (LaTeX)</option>
                   </select>
 
@@ -188,7 +243,7 @@ export function TableEditor({
                     {col.type === "latex" ? (
                       // @ts-ignore: MathLive custom element
                       <math-field
-                        className="w-full h-12"
+                        className="w-full h-12 border rounded p-1"
                         value={cells[ri]?.[ci] || ""}
                         virtual-keyboard-mode="onfocus"
                         smart-mode
