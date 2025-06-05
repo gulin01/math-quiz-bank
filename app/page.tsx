@@ -1,46 +1,27 @@
 "use client";
-import { useState } from "react";
-import QuestionList from "./_components/QuestionList";
-import Dashboard from "./_components/Dashboard";
-import QuestionPreview from "./_components/QuestionPreview";
 
-export default function Home() {
-  const [view, setView] = useState<string>("list");
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+export default function Page() {
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen p-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-50">
-      <div className="flex flex-col items-center gap-6 mt-20">
-        <h1 className="text-3xl font-bold text-center text-[#000]">
-          🧠 Math Quiz Dashboard
-        </h1>
-
-        <div className="flex gap-4">
-          <button
-            onClick={() => setView("create")}
-            className="bg-blue-600 text-white px-6 py-3 rounded text-lg hover:bg-blue-700 transition"
-          >
-            ➕ Create New Question
-          </button>
-
-          <button
-            onClick={() => setView("list")}
-            className="bg-gray-700 text-white px-6 py-3 rounded text-lg hover:bg-gray-800 transition"
-          >
-            📄 View Question List
-          </button>
-          <button
-            onClick={() => setView("preview")}
-            className="bg-gray-700 text-white px-6 py-3 rounded text-lg hover:bg-gray-800 transition"
-          >
-            📄 Test Questions As a User
-          </button>
-        </div>
-
-        <div className="w-full flex justify-center pt-10">
-          {view === "create" && <Dashboard setView={setView} />}
-          {view === "list" && <QuestionList setView={setView} />}
-          {view === "preview" && <QuestionPreview setView={setView} />}
-        </div>
+    <div className="min-h-screen p-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 flex flex-col items-center justify-center space-y-6">
+      <h1 className="text-2xl font-bold text-[#000]">Select Quiz Type</h1>
+      <div className="flex flex-col sm:flex-row gap-6">
+        <button
+          onClick={() => router.push("/math")}
+          className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+        >
+          Math Quiz
+        </button>
+        <button
+          onClick={() => router.push("/geometry")}
+          className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+        >
+          Geometry Quiz
+        </button>
       </div>
     </div>
   );

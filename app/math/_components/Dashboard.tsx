@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ColumnDefinition, TableData, TableEditor } from "./TableEditor";
 import { MCQEditor, MCQOption } from "./MQCEditor";
-import { parseMixedText } from "../_utils/parseMixedText";
+import { parseMixedText } from "@/app/_utils/parseMixedText";
 import { FillBlankEditor } from "./BlankEditor";
 
 // ProblemType union

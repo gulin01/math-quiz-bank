@@ -4,8 +4,8 @@ import "katex/dist/katex.min.css";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { InlineMath } from "react-katex";
-import { parseMixedText } from "../_utils/parseMixedText";
 import { MathfieldElement } from "mathlive";
+import { parseMixedText } from "@/app/_utils/parseMixedText";
 
 /**
  * Problem‐type definitions (must match exactly what you stored in sessionStorage)
