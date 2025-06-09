@@ -1,4 +1,3 @@
-// components/TableEditor.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,10 +8,6 @@ export type ColumnDefinition = {
   type: "text" | "number" | "latex";
 };
 
-/**
- * A single object representing the entire “table” state.
- * Dashboard will store one of these in its own state whenever TableEditor changes.
- */
 export type TableData = {
   columns: ColumnDefinition[];
   rows: string[];
@@ -21,19 +16,10 @@ export type TableData = {
 };
 
 interface TableEditorProps {
-  /**
-   * The initial shape of the table (from Dashboard). Once mounted, TableEditor
-   * will copy these into internal state and from then on manage them locally.
-   */
   initialColumns: ColumnDefinition[];
   initialRows: string[];
   initialCells: string[][];
   initialRowHeaderLabel: string;
-
-  /**
-   * Called whenever any of [columns, rows, cells, rowHeaderLabel] changes.
-   * Dashboard will use this to keep its own `tableData` up to date.
-   */
   onChange: (data: TableData) => void;
 }
 
@@ -44,9 +30,6 @@ export function TableEditor({
   initialRowHeaderLabel,
   onChange,
 }: TableEditorProps) {
-  //
-  // ─── Local State (all four pieces) ─────────────────────────────────────────
-  //
   const [columns, setColumns] = useState<ColumnDefinition[]>(initialColumns);
   const [rows, setRows] = useState<string[]>(initialRows);
   const [cells, setCells] = useState<string[][]>(initialCells);
@@ -54,51 +37,26 @@ export function TableEditor({
     initialRowHeaderLabel
   );
 
-  //
-  // ─── 1) Load MathLive custom element once ─────────────────────────────────
-  //
   useEffect(() => {
     import("mathlive");
   }, []);
 
-  //
-  // ─── 2) Whenever columns or rows change, re‐compute cells matrix size ────
-  //
-  // (We preserve any existing cell content if it already existed.)
-  //
   useEffect(() => {
     const newCells = rows.map((_, rIdx) =>
-      columns.map((_, cIdx) => {
-        // If there was a previous value in cells[rIdx][cIdx], keep it. Otherwise use "".
-        return cells[rIdx]?.[cIdx] ?? "";
-      })
+      columns.map((_, cIdx) => cells[rIdx]?.[cIdx] ?? "")
     );
     setCells(newCells);
   }, [columns, rows]);
 
-  //
-  // ─── 3) Whenever ANY of [columns, rows, cells, rowHeaderLabel] changes,
-  //     tell the parent exactly what our current table “shape” is.
-  //
   useEffect(() => {
-    onChange({
-      columns,
-      rows,
-      cells,
-      rowHeaderLabel,
-    });
+    onChange({ columns, rows, cells, rowHeaderLabel });
   }, [columns, rows, cells, rowHeaderLabel]);
 
-  //
-  // ─── 4) Local helpers to mutate columns/rows/etc ──────────────────────────
-  //
   const addColumn = () => {
-    // Append a new “Number” column by default
     setColumns([
       ...columns,
-      { name: `Column ${columns.length + 1}`, type: "number" },
+      { name: `열 ${columns.length + 1}`, type: "number" },
     ]);
-    // Also add an empty cell string to every row
     setCells((prev) => prev.map((r) => [...r, ""]));
   };
 
@@ -108,7 +66,7 @@ export function TableEditor({
   };
 
   const addRow = () => {
-    setRows((prev) => [...prev, `Row ${prev.length + 1}`]);
+    setRows((prev) => [...prev, `행 ${prev.length + 1}`]);
     setCells((prev) => [...prev, Array(columns.length).fill("")]);
   };
 
@@ -141,53 +99,45 @@ export function TableEditor({
     );
   };
 
-  //
-  // ─── 5) Render the table editor UI ────────────────────────────────────────
-  //
   return (
-    <div className="mb-8">
-      <div className="flex gap-2 mb-4">
+    <div className="mb-8 p-6 bg-gradient-to-br from-[#fdfbfb] to-[#ebedee] rounded-2xl shadow-xl font-pretendard">
+      <div className="flex gap-4 mb-6">
         <button
           onClick={addColumn}
-          className="px-3 py-1 bg-blue-500 text-white rounded"
+          className="px-4 py-2 bg-pink-500 hover:bg-pink-400 transition text-white font-bold rounded-xl shadow-md"
         >
-          + Column
+          ➕ 열 추가
         </button>
         <button
           onClick={addRow}
-          className="px-3 py-1 bg-blue-500 text-white rounded"
+          className="px-4 py-2 bg-green-500 hover:bg-green-400 transition text-white font-bold rounded-xl shadow-md"
         >
-          + Row
+          ➕ 행 추가
         </button>
       </div>
 
       <div className="overflow-auto">
-        <table className="w-full border border-gray-300 text-center">
-          <thead className="bg-gray-100">
+        <table className="min-w-full border border-gray-300 text-center shadow-md rounded-xl overflow-hidden bg-white">
+          <thead className="bg-gradient-to-r from-[#fbc2eb] to-[#a6c1ee] text-white font-semibold">
             <tr>
-              {/* First header cell: the row-header label */}
-              <th className="border p-2 bg-[#54e3e6]">
+              <th className="border p-3">
                 <input
                   type="text"
-                  placeholder="Row Header"
+                  placeholder="행 이름"
                   value={rowHeaderLabel}
                   onChange={(e) => setRowHeaderLabel(e.target.value)}
-                  className="w-full p-1 border rounded text-center"
+                  className="w-full p-2 border rounded-md text-center font-medium bg-white text-gray-800"
                 />
               </th>
-
               {columns.map((col, ci) => (
-                <th key={ci} className="border p-3 relative bg-[#54e3e6]">
-                  {/* Editable column name */}
+                <th key={ci} className="border p-3 relative">
                   <input
-                    placeholder="열 이름"
                     type="text"
+                    placeholder="열 이름"
                     value={col.name}
                     onChange={(e) => updateColName(ci, e.target.value)}
-                    className="w-full p-1 border rounded text-center mb-1"
+                    className="w-full p-2 mb-1 border rounded-md text-center bg-white font-medium text-gray-800"
                   />
-
-                  {/* Select box for column type */}
                   <select
                     value={col.type}
                     onChange={(e) =>
@@ -196,18 +146,16 @@ export function TableEditor({
                         e.target.value as ColumnDefinition["type"]
                       )
                     }
-                    className="w-full p-1 border rounded text-center text-sm"
+                    className="w-full p-2 border rounded-md text-center text-sm bg-white"
                   >
-                    <option value="number">Number</option>
-                    <option value="text">Text</option>
-                    <option value="latex">Math (LaTeX)</option>
+                    <option value="number">숫자</option>
+                    <option value="text">텍스트</option>
+                    <option value="latex">수식</option>
                   </select>
-
-                  {/* Delete-column button */}
                   <button
                     onClick={() => deleteColumn(ci)}
-                    className="absolute top-[-5px] right-1 text-red-600"
-                    title="Delete column"
+                    className="absolute top-[-5px] right-2 text-red-600 text-xl"
+                    title="열 삭제"
                   >
                     ×
                   </button>
@@ -218,12 +166,11 @@ export function TableEditor({
 
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={ri} className="group">
-                {/* Row-header cell (with MathLive) */}
-                <td className="border p-2 bg-[#54e3e6] relative">
+              <tr key={ri} className="group hover:bg-yellow-50 transition">
+                <td className="border p-2 bg-yellow-100 relative">
                   {/* @ts-ignore */}
                   <math-field
-                    class="w-full h-12"
+                    class="w-full h-12 bg-white p-1 rounded-md"
                     value={row}
                     virtual-keyboard-mode="onfocus"
                     smart-mode
@@ -231,32 +178,32 @@ export function TableEditor({
                   />
                   <button
                     onClick={() => deleteRow(ri)}
-                    className="absolute top-1 right-1 text-red-600 opacity-0 group-hover:opacity-100"
-                    title="Delete row"
+                    className="absolute top-1 right-2 text-red-500 opacity-0 group-hover:opacity-100"
+                    title="행 삭제"
                   >
-                    ×
+                    🗑️
                   </button>
                 </td>
 
                 {columns.map((col, ci) => (
                   <td key={ci} className="border p-2">
                     {col.type === "latex" ? (
-                      // @ts-ignore: MathLive custom element
+                      // @ts-ignore
                       <math-field
-                        className="w-full h-12 border rounded p-1"
+                        className="w-full h-12 border rounded-md p-1 bg-white"
                         value={cells[ri]?.[ci] || ""}
                         virtual-keyboard-mode="onfocus"
                         smart-mode
                         onInput={(e: any) =>
                           updateCell(ri, ci, e.target.getValue())
                         }
-                      ></math-field>
+                      />
                     ) : (
                       <input
                         type={col.type}
                         value={cells[ri]?.[ci] || ""}
                         onChange={(e) => updateCell(ri, ci, e.target.value)}
-                        className="w-full p-1 border rounded text-center"
+                        className="w-full p-2 border rounded-md text-center bg-white"
                       />
                     )}
                   </td>

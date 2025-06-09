@@ -103,7 +103,7 @@ export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
               key={i}
               className={`${
                 i === problem.correctOptionIndex
-                  ? "text-green-600 font-semibold"
+                  ? "text-green-600 font-semibold decoration-none"
                   : ""
               }`}
             >

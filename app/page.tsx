@@ -1,27 +1,99 @@
+// pages/index.tsx  (or app/page.tsx)
 "use client";
+import "katex/dist/katex.min.css";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  TableProblem,
+  TableProblemView,
+} from "./components/problem-displays/TableProblemView";
+import {
+  MCQProblem,
+  MCQProblemView,
+} from "./components/problem-displays/MCQProblemView";
+import {
+  BlankProblem,
+  BlankProblemView,
+} from "./components/problem-displays/BlankProblemView";
 
-export default function Page() {
-  const router = useRouter();
+export type AnyProblem = TableProblem | MCQProblem | BlankProblem;
+
+export default function QuestionList({
+  setView,
+}: {
+  setView: (view: string) => void;
+}) {
+  const [problems, setProblems] = useState<AnyProblem[]>([]);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("problems");
+    if (stored) {
+      try {
+        setProblems(JSON.parse(stored));
+      } catch {
+        setProblems([]);
+      }
+    }
+  }, []);
+
+  const handleDelete = (id: string) => {
+    if (!confirm("Are you sure you want to delete this problem?")) return;
+    const next = problems.filter((p) => p.id !== id);
+    setProblems(next);
+    sessionStorage.setItem("problems", JSON.stringify(next));
+  };
 
   return (
-    <div className="min-h-screen p-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 flex flex-col items-center justify-center space-y-6">
-      <h1 className="text-2xl font-bold text-[#000]">Select Quiz Type</h1>
-      <div className="flex flex-col sm:flex-row gap-6">
-        <button
-          onClick={() => router.push("/math")}
-          className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
-        >
-          Math Quiz
-        </button>
-        <button
-          onClick={() => router.push("/geometry")}
-          className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
-        >
-          Geometry Quiz
-        </button>
+    <div className="w-full min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <header className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-800">
+            📝 문제 목록
+          </h1>
+          <div
+            onClick={() => setView("math")}
+            className="text-blue-600 hover:underline cursor-pointer"
+          >
+            + 문제 생성하기
+          </div>
+        </header>
+
+        {problems.length === 0 ? (
+          <p className="text-center text-gray-500">No problems found.</p>
+        ) : (
+          <div className="space-y-6">
+            {problems.map((p) => {
+              switch (p.type) {
+                case "TABLE_FILL_CELLS":
+                  return (
+                    <TableProblemView
+                      key={p.id}
+                      problem={p}
+                      onDelete={handleDelete}
+                    />
+                  );
+                case "MCQ_SINGLE":
+                  return (
+                    <MCQProblemView
+                      key={p.id}
+                      problem={p}
+                      onDelete={handleDelete}
+                    />
+                  );
+                case "FILL_IN_THE_BLANK":
+                  return (
+                    <BlankProblemView
+                      key={p.id}
+                      problem={p}
+                      onDelete={handleDelete}
+                    />
+                  );
+                default:
+                  return null;
+              }
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

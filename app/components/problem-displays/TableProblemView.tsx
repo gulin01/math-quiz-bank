@@ -3,6 +3,7 @@
 
 import { parseMixedText } from "@/app/_utils/parseMixedText";
 import { InlineMath } from "react-katex";
+import { DesmosGraphType, DesmosGraphView } from "../DesmosGraphView";
 
 type ColumnDefinition = {
   name: string;
@@ -17,8 +18,9 @@ export type TableProblem = {
   rows: string[];
   cells: string[][];
   rowHeaderLabel?: string;
+  graphType?: DesmosGraphType;
+  graphState?: any; // ← add this!
 };
-
 interface TableProblemViewProps {
   problem: TableProblem;
   onDelete: (id: string) => void;
@@ -37,7 +39,7 @@ export function TableProblemView({ problem, onDelete }: TableProblemViewProps) {
           <h2 className="text-2xl font-semibold text-gray-800 mb-1">
             {parseMixedText(problem.question)}
           </h2>
-          <p className="text-sm text-gray-600">Type: {problem.type}</p>
+          <p className="text-sm text-gray-600">형태: {problem.type}</p>
         </div>
         <button
           onClick={() => onDelete(problem.id)}
@@ -46,6 +48,18 @@ export function TableProblemView({ problem, onDelete }: TableProblemViewProps) {
           Delete
         </button>
       </div>
+
+      {problem.graphState && problem.graphType && (
+        <div className="mt-6">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">
+            📉 설명용 그래프
+          </h3>
+          <DesmosGraphView
+            state={problem.graphState}
+            graphType={problem.graphType}
+          />
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full table-auto border-collapse">

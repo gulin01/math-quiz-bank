@@ -105,11 +105,7 @@ export function MCQEditor({
   };
 
   const addOption = () => {
-    const updatedOptions: MCQOption[] = [
-      ...options,
-      { text: "", type: "text" },
-    ];
-    setOptions(updatedOptions);
+    setOptions([...options, { text: "", type: "text" }]);
   };
 
   const removeOption = (idx: number) => {
@@ -122,22 +118,24 @@ export function MCQEditor({
     }
   };
 
-  console.log("MCQ Options", options);
   return (
-    <div className="mb-10">
-      <label className="block font-semibold mb-2 text-[#000]">
-        MCQ Options
+    <div className="mb-10 p-6 bg-gradient-to-br from-[#fdfbfb] to-[#ebedee] rounded-2xl shadow-xl font-pretendard">
+      <label className="block font-bold text-lg mb-4 text-[#333]">
+        객관식 보기 설정
       </label>
 
       {options.map((opt, idx) => (
-        <div key={idx} className="flex flex-col gap-2 mb-4">
-          <div className="flex items-center space-x-2">
+        <div
+          key={idx}
+          className="flex flex-col gap-2 mb-6 border p-4 rounded-xl bg-white shadow-md"
+        >
+          <div className="flex items-center gap-3">
             <input
               type="radio"
               name="mcq"
               checked={correctIndex === idx}
               onChange={() => setCorrectIndex(idx)}
-              className="mr-2"
+              className="accent-green-500"
             />
 
             <select
@@ -145,61 +143,58 @@ export function MCQEditor({
               onChange={(e) =>
                 updateOptionType(idx, e.target.value as MCQOption["type"])
               }
-              className="border border-gray-300 rounded p-1"
+              className="border border-gray-300 rounded-md p-1 text-sm"
             >
-              <option value="text">Text</option>
-              <option value="number">Number</option>
-              <option value="latex">Math (LaTeX)</option>
-              <option value="desmos">Desmos Graph</option>
+              <option value="text">텍스트</option>
+              <option value="number">숫자</option>
+              <option value="latex">수식 (LaTeX)</option>
+              <option value="desmos">그래프 (Desmos)</option>
             </select>
 
             <button
               onClick={() => removeOption(idx)}
-              className="text-red-600 hover:text-red-800 ml-auto"
-              title="Delete this option"
+              className="ml-auto text-red-500 hover:text-red-700 text-xl"
+              title="이 보기 삭제"
             >
               ×
             </button>
           </div>
 
-          {opt.type === "latex" ? (
-            // @ts-ignore: MathLive custom element
-            <math-field
-              className="w-full h-12 border rounded p-1"
-              value={opt.text}
-              virtual-keyboard-mode="onfocus"
-              smart-mode
-              onInput={(e: any) => {
-                const newText = e.target.getValue();
-                updateOptionText(idx, newText);
-              }}
-            ></math-field>
-          ) : opt.type === "desmos" ? (
-            <div className="flex flex-col">
+          <div className="w-full">
+            {opt.type === "latex" ? (
+              // @ts-ignore
+              <math-field
+                className="w-full h-12 border rounded-md p-2 bg-white"
+                value={opt.text}
+                virtual-keyboard-mode="onfocus"
+                smart-mode
+                onInput={(e: any) => updateOptionText(idx, e.target.getValue())}
+              />
+            ) : opt.type === "desmos" ? (
               <div
                 ref={(el) => {
                   desmosRefs.current[idx] = el;
                 }}
                 className="w-full h-[300px] border rounded mt-2"
               ></div>
-            </div>
-          ) : (
-            <input
-              type={opt.type}
-              value={opt.text}
-              onChange={(e) => updateOptionText(idx, e.target.value)}
-              placeholder={`Option ${idx + 1}`}
-              className="border p-2 rounded"
-            />
-          )}
+            ) : (
+              <input
+                type={opt.type}
+                value={opt.text}
+                onChange={(e) => updateOptionText(idx, e.target.value)}
+                placeholder={`보기 ${idx + 1}`}
+                className="w-full border p-2 rounded-md"
+              />
+            )}
+          </div>
         </div>
       ))}
 
       <button
         onClick={addOption}
-        className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+        className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold shadow-md transition"
       >
-        + Add Option
+        ➕ 보기 추가
       </button>
     </div>
   );
