@@ -166,6 +166,15 @@ export default function UniversalGeometryCanvas({
       className="border rounded bg-white"
     >
       <Layer>
+        {tempPoints.length > 0 && (tool === "line" || tool === "triangle") && (
+          <Line
+            points={tempPoints.flatMap((p) => [p.x, p.y])}
+            stroke="gray"
+            dash={[4, 4]}
+            strokeWidth={2}
+          />
+        )}
+
         {shapes.map((shape) => {
           if (shape.type === "point") {
             return (

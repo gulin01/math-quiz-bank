@@ -1,12 +1,12 @@
-// components/MCQProblemView.tsx
 "use client";
 
-import { parseMixedText } from "@/app/_utils/parseMixedText";
+import { useEffect, useRef } from "react";
 import { InlineMath } from "react-katex";
+import { parseMixedText } from "@/app/_utils/parseMixedText";
 
 export type MCQOption = {
   text: string;
-  type: "text" | "number" | "latex";
+  type: "text" | "number" | "latex" | "desmos";
 };
 
 export type MCQProblem = {
@@ -22,8 +22,58 @@ interface MCQProblemViewProps {
   onDelete: (id: string) => void;
 }
 
+declare global {
+  interface Window {
+    Desmos: any;
+  }
+}
+
 export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
-  const opts = Array.isArray(problem.options) ? problem.options : [];
+  const desmosRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const calculators = useRef<any[]>([]);
+
+  useEffect(() => {
+    const loadDesmos = () => {
+      if (typeof window !== "undefined" && !window.Desmos) {
+        const script = document.createElement("script");
+        script.src =
+          "https://www.desmos.com/api/v1.11/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6";
+        script.async = true;
+        script.onload = () => initDesmos();
+        document.body.appendChild(script);
+      } else {
+        initDesmos();
+      }
+    };
+
+    const initDesmos = () => {
+      problem.options.forEach((opt, idx) => {
+        if (opt.type === "desmos") {
+          const el = desmosRefs.current[idx];
+          if (el && !calculators.current[idx]) {
+            calculators.current[idx] = window.Desmos.GraphingCalculator(el, {
+              expressions: true,
+              keypad: false,
+              settingsMenu: false,
+              expressionsTopbar: false,
+            });
+
+            try {
+              calculators.current[idx].setExpressions([]);
+              calculators.current[idx].setExpression({
+                id: `view-${idx}`,
+                latex: opt.text,
+              });
+            } catch (err) {
+              console.warn("Invalid Desmos expression in view", err);
+            }
+          }
+        }
+      });
+    };
+
+    loadDesmos();
+  }, [problem.options]);
 
   return (
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
@@ -42,28 +92,30 @@ export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
         </button>
       </div>
 
-      <ul className="mt-4 list-disc list-inside text-gray-700">
-        {opts.map((opt, i) => {
-          const raw = opt.text || "";
-          // If user wrapped with $…$, strip and show as math
-          const isWrapped =
-            raw.trim().startsWith("$") && raw.trim().endsWith("$");
-          const displayText = isWrapped ? raw.trim().slice(1, -1) : raw;
+      <ul className="mt-4 list-disc list-inside text-gray-700 space-y-4">
+        {problem.options.map((opt, i) => {
+          const raw = opt.text?.trim() || "";
+          const isWrapped = raw.startsWith("$") && raw.endsWith("$");
+          const displayText = isWrapped ? raw.slice(1, -1) : raw;
 
           return (
             <li
               key={i}
-              className={
+              className={`${
                 i === problem.correctOptionIndex
                   ? "text-green-600 font-semibold"
                   : ""
-              }
+              }`}
             >
-              {isWrapped ? (
+              {opt.type === "latex" || isWrapped ? (
                 <InlineMath math={displayText} />
-              ) : opt.type === "latex" ? (
-                // If user’s opt.type is "latex" but forgot the $, still feed entire to InlineMath
-                <InlineMath math={raw} />
+              ) : opt.type === "desmos" ? (
+                <div
+                  ref={(el) => {
+                    desmosRefs.current[i] = el;
+                  }}
+                  className="w-full h-[300px] border rounded"
+                />
               ) : (
                 raw
               )}

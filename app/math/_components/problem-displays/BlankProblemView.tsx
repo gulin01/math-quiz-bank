@@ -19,11 +19,14 @@ interface BlankProblemViewProps {
 export function BlankProblemView({ problem, onDelete }: BlankProblemViewProps) {
   const ansRaw = problem.answer ?? "";
 
-  // If answer is “$…$”, strip the dollar signs
-  const isWrapped =
-    ansRaw.trim().startsWith("$") && ansRaw.trim().endsWith("$");
-  const inner = isWrapped ? ansRaw.trim().slice(1, -1) : ansRaw;
+  // Check if the answer is LaTeX-like
+  const isLatex = ansRaw.trim().startsWith("$") && ansRaw.trim().endsWith("$");
+  const isCareted = !isLatex && ansRaw.includes("^");
 
+  const extractLatex = () =>
+    isLatex ? ansRaw.trim().slice(1, -1) : isCareted ? ansRaw.trim() : "";
+
+  console.log("Problem", problem);
   return (
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-start mb-4">
@@ -43,15 +46,12 @@ export function BlankProblemView({ problem, onDelete }: BlankProblemViewProps) {
 
       <div className="mt-4 text-gray-700">
         <strong>Answer:</strong>{" "}
-        {isWrapped ? (
-          <InlineMath math={inner} />
-        ) : inner.includes("^") ? (
-          // If user typed LaTeX but forgot $…$, still try to render caret
-          <InlineMath math={inner} />
+        {isLatex || isCareted ? (
+          <InlineMath math={extractLatex()} />
+        ) : ansRaw ? (
+          <span>{ansRaw}</span>
         ) : (
-          <span>
-            {inner || <span className="text-gray-400">No answer</span>}
-          </span>
+          <span className="text-gray-400">No answer</span>
         )}
       </div>
     </div>

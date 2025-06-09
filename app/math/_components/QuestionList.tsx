@@ -48,7 +48,7 @@ export default function QuestionList({
             📝 Question List
           </h1>
           <div
-            onClick={() => setView("math/create")}
+            onClick={() => setView("math")}
             className="text-blue-600 hover:underline cursor-pointer"
           >
             + Create New Question
