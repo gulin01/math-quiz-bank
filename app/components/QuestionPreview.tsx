@@ -183,7 +183,7 @@ export default function QuestionPreview({
   }
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="w-full h-fit bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <header className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-extrabold text-gray-800">

@@ -22,6 +22,7 @@ export default function Dashboard({
   setView: (view: string) => void;
 }) {
   const router = useRouter();
+  const [showGraph, setShowGraph] = useState<boolean>(false);
 
   const [question, setQuestion] = useState<string>(
     "예시: 다음 방정식을 풀어보세요: $x^2 + 3x + 2 = 0$"
@@ -49,7 +50,13 @@ export default function Dashboard({
     { text: "", type: "text" },
   ]);
   const [correctOptionIndex, setCorrectOptionIndex] = useState<number>(0);
-  const [blankAnswer, setBlankAnswer] = useState<string>("");
+  const [blankAnswer, setBlankAnswer] = useState<{
+    answer: string;
+    answerType: string;
+  }>({
+    answer: "",
+    answerType: "text",
+  });
 
   const [showMathEditor, setShowMathEditor] = useState<boolean>(false);
   const [mathInput, setMathInput] = useState<string>("");
@@ -156,7 +163,8 @@ export default function Dashboard({
       payload.options = mcqOptions;
       payload.correctOptionIndex = correctOptionIndex;
     } else {
-      payload.answer = blankAnswer;
+      payload.answer = blankAnswer.answer;
+      payload.answerType = blankAnswer.answerType;
     }
 
     if (graphCalc.current?.getState) {
@@ -178,7 +186,7 @@ export default function Dashboard({
       </h1>
 
       <button
-        onClick={() => router.push("/list")}
+        onClick={() => router.push("/")}
         className="text-blue-600 underline mb-6 block text-sm hover:text-blue-800"
       >
         ← 문제 목록으로 돌아가기
@@ -259,24 +267,45 @@ export default function Dashboard({
       </div>
 
       {/* 설명용 그래프 필드 */}
+      {/* 설명용 그래프 toggle + field */}
       <div className="mb-10">
         <label className="block font-bold text-lg text-blue-700 mb-2">
-          📉 설명용 그래프 (선택 사항)
+          📉 설명용 그래프
         </label>
-        <select
-          value={graphType}
-          onChange={(e) => setGraphType(e.target.value as DesmosGraphType)}
-          className="border border-gray-300 rounded p-2 mb-4 bg-white"
-        >
-          <option value="graphing">📈 표준 그래프 계산기</option>
-          <option value="geometry">📐 기하 도구</option>
-          <option value="scientific">🧪 과학 계산기</option>
-          <option value="fourfunction">➕ 사칙 계산기</option>
-        </select>
-        <div
-          ref={graphRef}
-          className="w-full h-[400px] border rounded shadow bg-white"
-        />
+
+        {!showGraph ? (
+          <button
+            onClick={() => setShowGraph(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded shadow"
+          >
+            ➕ 설명용 그래프 추가하기
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => setShowGraph(false)}
+              className="bg-red-400 hover:bg-red-500 text-white px-3 py-1 rounded shadow mb-4"
+            >
+              ➖ 설명용 그래프 숨기기
+            </button>
+
+            <select
+              value={graphType}
+              onChange={(e) => setGraphType(e.target.value as DesmosGraphType)}
+              className="border border-gray-300 rounded p-2 mb-4 bg-white w-full"
+            >
+              <option value="graphing">📈 표준 그래프 계산기</option>
+              <option value="geometry">📐 기하 도구</option>
+              <option value="scientific">🧪 과학 계산기</option>
+              <option value="fourfunction">➕ 사칙 계산기</option>
+            </select>
+
+            <div
+              ref={graphRef}
+              className="w-full h-[400px] border rounded shadow bg-white"
+            />
+          </>
+        )}
       </div>
 
       {type === "TABLE_FILL_CELLS" && (

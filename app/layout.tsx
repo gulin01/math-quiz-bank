@@ -1,4 +1,3 @@
-// app/layout.tsx
 import "./globals.css";
 import Navbar from "./components/Navbar";
 
@@ -13,10 +12,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
-      <body className="bg-white text-gray-900">
+    <html lang="ko" className="h-full">
+      <body className="h-full bg-white text-gray-900 flex flex-col">
         <Navbar />
-        <main className="max-w-4xl mx-auto p-6">{children}</main>
+        <main className="flex-1 max-w-4xl mx-auto p-6 w-full">{children}</main>
       </body>
     </html>
   );

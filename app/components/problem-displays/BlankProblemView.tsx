@@ -1,8 +1,8 @@
-// components/BlankProblemView.tsx
 "use client";
 
 import { parseMixedText } from "@/app/_utils/parseMixedText";
 import { InlineMath } from "react-katex";
+import { DesmosGraphView } from "../DesmosGraphView";
 
 export type BlankProblem = {
   id: string;
@@ -18,15 +18,28 @@ interface BlankProblemViewProps {
 
 export function BlankProblemView({ problem, onDelete }: BlankProblemViewProps) {
   const ansRaw = problem.answer ?? "";
+  const trimmed = ansRaw.trim();
 
-  // Check if the answer is LaTeX-like
-  const isLatex = ansRaw.trim().startsWith("$") && ansRaw.trim().endsWith("$");
-  const isCareted = !isLatex && ansRaw.includes("^");
+  const isLatex = trimmed.startsWith("$") && trimmed.endsWith("$");
+  const isCareted = !isLatex && trimmed.includes("^");
+
+  const isGraph = trimmed.startsWith("graph:");
 
   const extractLatex = () =>
-    isLatex ? ansRaw.trim().slice(1, -1) : isCareted ? ansRaw.trim() : "";
+    isLatex ? trimmed.slice(1, -1) : isCareted ? trimmed : "";
 
-  console.log("Problem", problem);
+  let graphState: any = null;
+
+  if (isGraph) {
+    try {
+      const json = trimmed.slice(6); // after "graph:"
+      const parsed = JSON.parse(json);
+      graphState = parsed.graphState || parsed; // support both `{ graphState: {...} }` or `{...}`
+    } catch (err) {
+      console.warn("Invalid graph JSON", err);
+    }
+  }
+
   return (
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-start mb-4">
@@ -46,10 +59,21 @@ export function BlankProblemView({ problem, onDelete }: BlankProblemViewProps) {
 
       <div className="mt-4 text-gray-700">
         <strong>Answer:</strong>{" "}
-        {isLatex || isCareted ? (
-          <InlineMath math={extractLatex()} />
-        ) : ansRaw ? (
-          <span>{ansRaw}</span>
+        {isGraph && graphState ? (
+          <div className="mt-4">
+            <DesmosGraphView
+              graphType="graphing"
+              state={graphState}
+              label="Graph Preview"
+            />
+          </div>
+        ) : isLatex || isCareted ? (
+          <>
+            <InlineMath math={extractLatex()} />
+            <div className="mt-2 text-xs text-gray-500">Parsed LaTeX</div>
+          </>
+        ) : trimmed ? (
+          <span>{trimmed}</span>
         ) : (
           <span className="text-gray-400">No answer</span>
         )}

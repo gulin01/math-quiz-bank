@@ -1,113 +1,170 @@
-// components/FillBlankEditor.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type Mode = "text" | "latex" | "graph";
 
 interface FillBlankEditorProps {
-  /** The initial answer string (may include LaTeX) */
-  initialAnswer: string;
-
-  /**
-   * Called whenever the user changes their answer text (raw string including any `$…$`).
-   * Dashboard will keep a mirror copy in its own state.
-   */
-  onChange: (answer: string) => void;
+  initialAnswer: { answer: string; answerType: string };
+  onChange: (answer: { answer: string; answerType: string }) => void;
 }
 
 export function FillBlankEditor({
   initialAnswer,
   onChange,
 }: FillBlankEditorProps) {
-  //
-  // ─── 1) If you want to allow LaTeX for the “answer” field,
-  //     we'll load MathLive (just like in TableEditor/MCQEditor).
-  //
-  useEffect(() => {
-    import("mathlive");
-  }, []);
+  const [answer, setAnswer] = useState<{
+    answer: string;
+    answerType: string;
+  }>(initialAnswer);
 
-  //
-  // ─── 2) Local state for the answer string.
-  //     Could be plain text like "42" or a LaTeX snippet wrapped in `$…$`.
-  //
-  const [answer, setAnswer] = useState<string>(initialAnswer);
+  const [mode, setMode] = useState<Mode>(
+    (initialAnswer.answerType as Mode) || "text"
+  );
 
-  //
-  // ─── 3) Whenever `answer` changes, notify parent:
-  //
+  const desmosRef = useRef<HTMLDivElement | null>(null);
+  const calculatorRef = useRef<any>(null);
+
   useEffect(() => {
     onChange(answer);
   }, [answer]);
 
-  //
-  // ─── 4) We’ll let the user type either in a regular input
-  //     or (optionally) in a MathLive `<math-field>` if you expect LaTeX.
-  //     For a simple text‐only blank, you could omit `<math-field>` entirely.
-  //
-  //     Below: we give them a toggle between “Text” vs “Math (LaTeX)”.
-  //
-  const [mode, setMode] = useState<"text" | "latex">("text");
+  useEffect(() => {
+    if (mode === "latex") {
+      import("mathlive");
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "graph" || !desmosRef.current) return;
+
+    const scriptId = "desmos-script-graph";
+    if (document.getElementById(scriptId)) {
+      initDesmos();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src =
+      "https://www.desmos.com/api/v1.11/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6";
+    script.async = true;
+    script.onload = initDesmos;
+    document.body.appendChild(script);
+  }, [mode]);
+
+  const initDesmos = () => {
+    if (!desmosRef.current || calculatorRef.current) return;
+    const Desmos = (window as any).Desmos;
+    calculatorRef.current = Desmos.GraphingCalculator(desmosRef.current, {
+      expressions: true,
+      keypad: true,
+    });
+  };
+
+  const handleInsertFromGraph = () => {
+    if (
+      calculatorRef.current?.getExpressions &&
+      calculatorRef.current?.getState
+    ) {
+      const expressions = calculatorRef.current.getExpressions();
+      const firstLatex = expressions.find((e: any) => e.latex)?.latex;
+      const graphState = calculatorRef.current.getState();
+
+      if (firstLatex && graphState) {
+        setAnswer({
+          answer: `graph:${JSON.stringify({
+            graphState,
+            graphType: "graphing",
+          })}`,
+          answerType: "graph",
+        });
+      }
+    }
+  };
+
+  const handleModeChange = (newMode: Mode) => {
+    setMode(newMode);
+    setAnswer((prev) => ({
+      ...prev,
+      answerType: newMode,
+    }));
+  };
 
   return (
     <div className="mb-6 border border-gray-300 p-4 rounded bg-gray-50">
       <label className="block font-semibold mb-2">
         Fill‐in‐the‐Blank Answer
       </label>
+
       <div className="flex items-center mb-4">
         <span className="mr-2 font-medium">Mode:</span>
         <select
           value={mode}
-          onChange={(e) => setMode(e.target.value as "text" | "latex")}
+          onChange={(e) => handleModeChange(e.target.value as Mode)}
           className="border border-gray-300 p-1 rounded"
         >
           <option value="text">Text</option>
           <option value="latex">Math (LaTeX)</option>
+          <option value="graph">Desmos (Graph)</option>
         </select>
       </div>
 
-      {mode === "latex" ? (
+      {mode === "latex" && (
         <>
-          {/* ─── MathLive Editor ───────────────────────────────────────────────── */}
           <p className="text-sm text-gray-600 mb-2">
-            Enter your answer as raw LaTeX (it will be wrapped in `$…$` when
-            saved).
+            Enter LaTeX (wrapped in $...$).
           </p>
-          {/* @ts-ignore: MathLive custom element */}
+          {/* @ts-ignore */}
           <math-field
             className="w-full h-12 border rounded p-1 mb-2"
             value={
-              // strip surrounding $ if the parent passed one
-              answer.startsWith("$") && answer.endsWith("$")
-                ? answer.slice(1, -1)
-                : answer
+              answer.answer.startsWith("$")
+                ? answer.answer.slice(1, -1)
+                : answer.answer
             }
             virtual-keyboard-mode="onfocus"
             smart-mode
-            onInput={(e: any) => {
-              const latexInside = e.target.getValue() as string;
-              // we’ll always store it as `$…$` so Dashboard receives a valid math snippet
-              setAnswer(`$${latexInside}$`);
-            }}
+            onInput={(e: any) =>
+              setAnswer({
+                answer: `$${e.target.getValue()}$`,
+                answerType: "latex",
+              })
+            }
           />
         </>
-      ) : (
+      )}
+
+      {mode === "text" && (
         <>
-          {/* ─── Plain Text Editor ─────────────────────────────────────────────── */}
-          <p className="text-sm text-gray-600 mb-2">
-            Enter your answer as plain text (no LaTeX).
-          </p>
+          <p className="text-sm text-gray-600 mb-2">Plain text answer.</p>
           <input
             type="text"
-            value={
-              // if the parent gave us a LaTeX‐wrapped string, strip the `$…$`
-              answer.startsWith("$") && answer.endsWith("$")
-                ? answer.slice(1, -1)
-                : answer
+            value={answer.answer}
+            onChange={(e) =>
+              setAnswer({ answer: e.target.value, answerType: "text" })
             }
-            onChange={(e) => setAnswer(e.target.value)}
             className="w-full border p-2 rounded text-center"
             placeholder="Type the correct answer here"
           />
+        </>
+      )}
+
+      {mode === "graph" && (
+        <>
+          <p className="text-sm text-gray-600 mb-2">
+            Graph your answer below. First expression will be used and saved.
+          </p>
+          <div
+            ref={desmosRef}
+            className="w-full h-[300px] border rounded bg-white shadow mb-3"
+          />
+          <button
+            onClick={handleInsertFromGraph}
+            className="bg-blue-600 text-white px-3 py-1 rounded shadow"
+          >
+            ➕ Insert Graph Expression
+          </button>
         </>
       )}
     </div>

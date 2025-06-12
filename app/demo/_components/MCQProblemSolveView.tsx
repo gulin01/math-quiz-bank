@@ -1,37 +1,19 @@
+// components/solve-views/MCQProblemSolveView.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
 import { InlineMath } from "react-katex";
 import { parseMixedText } from "@/app/_utils/parseMixedText";
-import { DesmosGraphType, DesmosGraphView } from "../DesmosGraphView";
 
-export type MCQOption = {
-  text: string;
-  type: "text" | "number" | "latex" | "desmos";
-};
-
-export type MCQProblem = {
-  id: string;
-  type: "MCQ_SINGLE";
-  question: string;
-  options: MCQOption[];
-  correctOptionIndex: number;
-  graphType?: DesmosGraphType;
-  graphState?: any; // ← add this!
-};
-
-interface MCQProblemViewProps {
-  problem: MCQProblem;
-  onDelete: (id: string) => void;
-}
-
-declare global {
-  interface Window {
-    Desmos: any;
-  }
-}
-
-export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
+export function MCQProblemSolveView({
+  problem,
+  userAnswer,
+  onAnswer,
+}: {
+  problem: any;
+  userAnswer: number | null;
+  onAnswer: (index: number) => void;
+}) {
   const desmosRefs = useRef<(HTMLDivElement | null)[]>([]);
   const calculators = useRef<any[]>([]);
 
@@ -49,8 +31,10 @@ export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
       }
     };
 
+    console.log(problem);
+
     const initDesmos = () => {
-      problem.options.forEach((opt, idx) => {
+      problem.options.forEach((opt: any, idx: number) => {
         if (opt.type === "desmos") {
           const el = desmosRefs.current[idx];
           if (el && !calculators.current[idx]) {
@@ -79,36 +63,13 @@ export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
   }, [problem.options]);
 
   return (
-    <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-1">
-            {parseMixedText(problem.question)}
-          </h2>
-          <p className="text-sm text-gray-600">Type: {problem.type}</p>
-        </div>
-        <button
-          onClick={() => onDelete(problem.id)}
-          className="text-red-500 hover:text-red-700 text-sm"
-        >
-          Delete
-        </button>
-      </div>
+    <div className="bg-white border border-gray-300 rounded-2xl shadow-md p-6 font-pretendard">
+      <h2 className="text-3xl font-bold text-indigo-700 mb-6">
+        {parseMixedText(problem.question)}
+      </h2>
 
-      {problem.graphState && problem.graphType && (
-        <div className="mt-6 min-h-[300px]">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">
-            📉 설명용 그래프
-          </h3>
-          <DesmosGraphView
-            state={problem.graphState}
-            graphType={problem.graphType}
-          />
-        </div>
-      )}
-
-      <ul className="mt-4 list-disc list-inside text-gray-700 space-y-4">
-        {problem.options.map((opt, i) => {
+      <ul className="space-y-4">
+        {problem.options.map((opt: any, i: number) => {
           const raw = opt.text?.trim() || "";
           const isWrapped = raw.startsWith("$") && raw.endsWith("$");
           const displayText = isWrapped ? raw.slice(1, -1) : raw;
@@ -116,12 +77,21 @@ export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
           return (
             <li
               key={i}
-              className={`${
-                i === problem.correctOptionIndex
-                  ? "text-green-600 font-semibold decoration-none"
-                  : ""
+              className={`p-4 rounded-xl border flex items-center gap-3 transition cursor-pointer hover:shadow-md ${
+                userAnswer === i
+                  ? "bg-indigo-100 border-indigo-500"
+                  : "bg-gray-50 border-gray-300"
               }`}
+              onClick={() => onAnswer(i)}
             >
+              <input
+                type="radio"
+                name={problem.id}
+                value={i}
+                checked={userAnswer === i}
+                onChange={() => onAnswer(i)}
+                className="accent-indigo-500"
+              />
               {opt.type === "latex" || isWrapped ? (
                 <InlineMath math={displayText} />
               ) : opt.type === "desmos" ? (
@@ -132,7 +102,7 @@ export function MCQProblemView({ problem, onDelete }: MCQProblemViewProps) {
                   className="w-full h-[300px] border rounded"
                 />
               ) : (
-                raw
+                <span className="text-gray-800 text-base">{raw}</span>
               )}
             </li>
           );

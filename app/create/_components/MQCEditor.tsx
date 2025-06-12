@@ -118,6 +118,8 @@ export function MCQEditor({
     }
   };
 
+  console.log("MCQEditor options", options);
+
   return (
     <div className="mb-10 p-6 bg-gradient-to-br from-[#fdfbfb] to-[#ebedee] rounded-2xl shadow-xl font-pretendard">
       <label className="block font-bold text-lg mb-4 text-[#333]">

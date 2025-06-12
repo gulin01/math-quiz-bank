@@ -8,11 +8,20 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/", label: "문제 목록", icon: <List className="w-5 h-5" /> },
+    {
+      href: "/",
+      label: "문제 목록",
+      icon: <List className="w-5 h-5" />,
+    },
     {
       href: "/create",
       label: "문제 만들기",
       icon: <PlusCircle className="w-5 h-5" />,
+    },
+    {
+      href: "/demo",
+      label: "문제 풀어보기",
+      icon: <BookOpen className="w-5 h-5" />,
     },
   ];
 

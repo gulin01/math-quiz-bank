@@ -33,7 +33,7 @@ export function TableProblemView({ problem, onDelete }: TableProblemViewProps) {
   const cls = Array.isArray(problem.cells) ? problem.cells : [];
 
   return (
-    <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
+    <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-6 border border-[#000]">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-1">
@@ -50,7 +50,7 @@ export function TableProblemView({ problem, onDelete }: TableProblemViewProps) {
       </div>
 
       {problem.graphState && problem.graphType && (
-        <div className="mt-6">
+        <div className="mt-6 min-h-[300px]">
           <h3 className="text-sm font-medium text-gray-700 mb-2">
             📉 설명용 그래프
           </h3>
@@ -61,7 +61,7 @@ export function TableProblemView({ problem, onDelete }: TableProblemViewProps) {
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mt-[10px]">
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="bg-indigo-50">

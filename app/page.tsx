@@ -15,8 +15,33 @@ import {
   BlankProblem,
   BlankProblemView,
 } from "./components/problem-displays/BlankProblemView";
-
-export type AnyProblem = TableProblem | MCQProblem | BlankProblem;
+import { useRouter } from "next/navigation";
+import { ColumnDefinition } from "./create/_components/TableEditor";
+import { MCQOption } from "./create/_components/MQCEditor";
+export type AnyProblem = {
+  id: string;
+  type: "TABLE_FILL_CELLS" | "MCQ_SINGLE" | "FILL_IN_THE_BLANK";
+  question: string;
+  graphState?: any;
+  graphType?: string;
+} & (
+  | {
+      type: "TABLE_FILL_CELLS";
+      columns: ColumnDefinition[];
+      rows: string[];
+      cells: string[][];
+      rowHeaderLabel?: string;
+    }
+  | {
+      type: "MCQ_SINGLE";
+      options: MCQOption[];
+      correctOptionIndex: number;
+    }
+  | {
+      type: "FILL_IN_THE_BLANK";
+      answer: string;
+    }
+);
 
 export default function QuestionList({
   setView,
@@ -24,7 +49,7 @@ export default function QuestionList({
   setView: (view: string) => void;
 }) {
   const [problems, setProblems] = useState<AnyProblem[]>([]);
-
+  const router = useRouter();
   useEffect(() => {
     const stored = sessionStorage.getItem("problems");
     if (stored) {
@@ -44,14 +69,14 @@ export default function QuestionList({
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <header className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-extrabold text-gray-800">
             📝 문제 목록
           </h1>
           <div
-            onClick={() => setView("math")}
+            onClick={() => router.push("/create")}
             className="text-blue-600 hover:underline cursor-pointer"
           >
             + 문제 생성하기
@@ -61,7 +86,7 @@ export default function QuestionList({
         {problems.length === 0 ? (
           <p className="text-center text-gray-500">No problems found.</p>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-10">
             {problems.map((p) => {
               switch (p.type) {
                 case "TABLE_FILL_CELLS":

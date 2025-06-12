@@ -146,7 +146,7 @@ export function TableEditor({
                         e.target.value as ColumnDefinition["type"]
                       )
                     }
-                    className="w-full p-2 border rounded-md text-center text-sm bg-white"
+                    className="w-full p-2 border rounded-md text-center text-sm bg-white text-[#000]"
                   >
                     <option value="number">숫자</option>
                     <option value="text">텍스트</option>
