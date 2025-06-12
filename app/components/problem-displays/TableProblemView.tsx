@@ -61,7 +61,7 @@ export function TableProblemView({ problem, onDelete }: TableProblemViewProps) {
         </div>
       )}
 
-      <div className="overflow-x-auto mt-[10px]">
+      <div className="overflow-x-auto mt-[10px] ">
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="bg-indigo-50">
