@@ -31,6 +31,7 @@ export default function DemoRunner() {
 
   const handleNext = () => {
     const current = problems[currentIndex];
+    console.log("Handling next for problem:", current);
     const userAns = userInput[current.id];
     let isCorrect = false;
 
@@ -41,8 +42,19 @@ export default function DemoRunner() {
       const user = (userAns ?? "").trim();
       isCorrect = correct === user;
     } else if (current.type === "TABLE_FILL_CELLS") {
-      // For now, mark all as correct
-      isCorrect = true;
+      const correctCells = (current as any).cells || [];
+      const userCells = userAns || [];
+
+      isCorrect =
+        correctCells.length === userCells.length &&
+        correctCells.every(
+          (row: string[], ri: number) =>
+            row.length === userCells[ri]?.length &&
+            row.every(
+              (cell: string, ci: number) =>
+                (cell ?? "").trim() === (userCells[ri]?.[ci] ?? "").trim()
+            )
+        );
     }
 
     setAnswers([...answers, { id: current.id, correct: isCorrect }]);

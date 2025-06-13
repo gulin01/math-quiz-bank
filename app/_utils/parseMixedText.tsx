@@ -1,4 +1,4 @@
-// utils/parseMixedText.ts
+// utils/parseMixedText.tsx
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import React from "react";
