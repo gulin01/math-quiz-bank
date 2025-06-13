@@ -1,87 +1,105 @@
-# Math Quiz Bank
+# 🚀 Math Quiz Bank 인수인계 문서
 
-**Math Quiz Bank**는 다양한 수학 퀴즈를 생성하고 관리할 수 있는 웹 애플리케이션입니다. Next.js와 TypeScript 기반으로 개발되어, 교육자와 학습자가 쉽게 사용할 수 있는 직관적인 퀴즈 플랫폼을 제공합니다.
+---
 
-## 주요 기능
+## 1. 프로젝트 개요
 
-- ✅ **퀴즈 생성 기능**: 난이도와 주제를 선택하여 맞춤형 수학 퀴즈를 생성할 수 있습니다.
-- ✅ **간편한 UI/UX**: 사용자가 쉽게 접근하고 퀴즈를 풀 수 있도록 직관적인 인터페이스 제공
-- ✅ **반응형 디자인**: 데스크탑과 모바일 환경 모두에 최적화
-- ✅ **고속 성능**: Next.js 기반의 최적화된 성능 제공
+- **프로젝트명**: Math Quiz Bank
+- **설명**: Next.js와 TypeScript 기반으로 다양한 수학 퀴즈(표 채우기, 객관식, 빈칸 채우기)를 생성·관리하고, MathLive와 Desmos를 활용한 수식 입력 및 그래프 설명 기능을 제공하는 웹 애플리케이션입니다.
+- **주요 기능**:
+  - 표 셀 채우기(Table Fill Cells)
+  - 객관식(MCQ Single Choice)
+  - 빈칸 채우기(Fill in the Blank)
+  - 수식(LaTeX) 입력 및 KaTeX 미리보기
+  - Desmos 기반 설명용 그래프 삽입 및 렌더링
+  - 세션 스토리지(sessionStorage)를 활용한 문제 저장·관리 및 데모(Test) 기능
 
-## 기술 스택
+## 2. 주요 라이브러리 설명
 
-- **프레임워크**: [Next.js](https://nextjs.org/)
-- **언어**: TypeScript
-- **스타일링**: CSS
-- **폰트 최적화**: [next/font](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts), Vercel의 Geist 사용
+| 라이브러리                 | 용도                                                                       |
+| -------------------------- | -------------------------------------------------------------------------- |
+| Next.js                    | React 기반 SSR/SSG 프레임워크(앱 라우팅, 파일 기반 라우팅 등)              |
+| TypeScript                 | 정적 타입 검사로 안정성 및 개발 생산성 향상                                |
+| MathLive                   | 브라우저 내 수식(LaTeX) 입력을 위한 커스텀 `<math-field>` 컴포넌트         |
+| Desmos                     | 설명용 그래프 렌더링(Graphing, Geometry, Scientific, FourFunction)         |
+| React Query                | API 통신 및 데이터 캐싱(※ 현재 구현에 직접 도입되어 있지 않으나 확장 지점) |
+| react-katex & KaTeX        | LaTeX 수식을 HTML로 렌더링                                                 |
+| Tailwind CSS               | 유틸리티 클래스 기반 스타일링                                              |
+| Prisma (@prisma/client)    | ORM(백엔드 DB 연동 준비용, 현재 코드에서는 DB 레이어 미구현)               |
+| chart.js & react-chartjs-2 | 차트 렌더링(설정 파일 존재하지만 직접 사용되지 않음)                       |
+| react-konva                | Canvas 기반 드로잉 라이브러리(설정 파일 존재하지만 직접 사용되지 않음)     |
 
-## 시작하기
+## 3. 페이지 구조
 
-### 설치 전 요구사항
+```text
+app/
+├─ page.tsx             # 문제 목록(메인) 페이지
+├─ create/
+│   └─ page.tsx         # 문제 생성 마법사 페이지
+│   └─ _components/     # 문제 생성용 에디터 컴포넌트 집합
+├─ demo/
+│   └─ page.tsx         # 문제 풀기 데모 페이지
+│   └─ _components/     # 데모 실행 및 풀이 뷰 컴포넌트 집합
+├─ components/
+│   ├─ Navbar.tsx       # 공통 네비게이션 바
+│   ├─ DesmosGraphView.tsx  # Desmos 그래프 뷰 컴포넌트
+│   └─ problem-displays/    # 문제 미리보기(Preview) 컴포넌트
+├─ _utils/
+│   ├─ parseMixedText.tsx   # 텍스트+LaTeX 파싱 유틸
+│   ├─ extractDesmosID.ts   # Desmos URL ID 추출 유틸
+│   └─ formulaLibrary.ts    # 수식 라이브러리 예시
+├─ globals.css          # 전역 스타일(Tailwind CSS)
+├─ layout.tsx           # 공통 레이아웃 및 Navbar 포함
+└─ next.config.ts       # Next.js 설정
+```
 
-- Node.js (버전 14 이상)
+## 4. 주요 컴포넌트 역할
+
+- **Navbar**: 상단 네비게이션 메뉴(문제 목록 / 생성 / 데모)
+- **TableEditor**: 표 형태 문제 생성·편집 UI
+- **MCQEditor**: 객관식 문제(보기, 정답) 생성·편집 UI
+- **FillBlankEditor**: 빈칸 채우기 문제(텍스트/수식/그래프) 생성·편집 UI
+- **DesmosGraphView**: Desmos API를 로드하여 그래프 상태(state)를 렌더링
+- **parseMixedText**: `$...$`로 감싼 LaTeX 및 일반 텍스트를 KaTeX로 변환하여 렌더링
+- **formulaLibrary**: 자주 쓰이는 수학 수식 템플릿 목록
+- **TableProblemView / MCQProblemView / BlankProblemView**: 문제 목록 페이지에서 각 문제 유형별 미리보기 및 삭제 처리
+- **QuestionPreview**: 세션 스토리지에 저장된 문제를 테스트 형태로 풀어보는 예비 Preview 뷰
+- **DemoRunner**: 문제 풀기 데모 로직(문제 순회, 정답 체크, 결과 요약)
+- **BlankProblemSolveView / MCQProblemSolveView / TableProblemSolveView**: 데모 페이지 내 실제 문제 풀이 UI 및 사용자 입력 처리
+
+## 5. 설치 및 실행 방법
+
+### 요구사항
+
+- Node.js v14 이상
 - npm 또는 yarn
 
-### 설치 방법
+### 설치
 
-1. **레포지토리 클론**:
-
-   ```bash
-   git clone https://github.com/gulin01/math-quiz-bank.git
-   cd math-quiz-bank
-   ```
-
-2. **의존성 설치**:
-
-   npm 사용 시:
-
-   ```bash
-   npm install
-   ```
-
-   yarn 사용 시:
-
-   ```bash
-   yarn install
-   ```
+```bash
+git clone https://github.com/gulin01/math-quiz-bank.git
+cd math-quiz-bank
+npm install
+# 또는 yarn install
+```
 
 ### 개발 서버 실행
 
 ```bash
 npm run dev
+# 또는 yarn dev
+
+# 브라우저에서 http://localhost:3000 접속
 ```
 
-또는
+### 빌드 및 프로덕션
 
 ```bash
-yarn dev
+npm run build
+npm start
+# 또는 yarn build && yarn start
 ```
 
-브라우저에서 [http://localhost:3000](http://localhost:3000) 접속하여 실행 중인 앱을 확인할 수 있습니다.
+---
 
-## 프로젝트 구조
-
-```
-math-quiz-bank/
-├── app/                 # 주요 페이지 및 컴포넌트
-├── public/              # 이미지, 폰트 등의 정적 파일
-├── .gitignore           # Git에서 제외할 파일 목록
-├── README.md            # 프로젝트 설명 파일
-├── next.config.ts       # Next.js 설정 파일
-├── package.json         # 프로젝트 정보 및 스크립트
-├── tsconfig.json        # TypeScript 설정
-├── postcss.config.mjs   # PostCSS 설정
-```
-
-## 배포
-
-프로덕션 배포는 [Vercel](https://vercel.com/)을 사용하는 것이 권장됩니다. Next.js와 완벽히 연동되며 간편한 CI/CD 환경을 제공합니다.
-
-## 기여하기
-
-이 프로젝트는 오픈소스로 누구나 기여할 수 있습니다. 포크 후 수정 사항을 반영한 후 Pull Request를 보내주세요!
-
-## 라이선스
-
-이 프로젝트는 [MIT 라이선스](LICENSE)에 따라 제공됩니다.
+※ 추가 문의 사항이나 미반영된 요구사항은 `README.md` 및 소스코드를 참조해주세요.
